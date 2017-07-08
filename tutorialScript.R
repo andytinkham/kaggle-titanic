@@ -7,12 +7,16 @@ setwd("~/Rprojects/kaggle-titanic/")
 # install.packages('rattle')
 # install.packages('rpart.plot')
 # install.packages('RColorBrewer')
+# install.packages('randomForest')
+# install.packages('party')
 
 library(readr)
 library(rpart)
 library(rattle)
 library(rpart.plot)
 library(RColorBrewer)
+library(randomForest)
+library(party)
 
 # Pull in the datasets
 train <- read.csv("data/train.csv")
@@ -147,8 +151,50 @@ test <- combi[892:1309,]
 fit <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + Title 
              + FamilySize + FamilyID, data = train, method = "class")
 
-fancyRpartPlot(fit)
-Prediction <- predict(fit, test, type = "class")
+# fancyRpartPlot(fit)
+
+# Random forests to the rescue! (Part 5)
+# Seed the random generator for reproducibility
+set.seed(1026)
+
+# First add values to the 263 records that don't have an Age value
+Agefit <- rpart(Age ~ Pclass + Sex + SibSp + Parch + Fare + Embarked + Title 
+                + FamilySize,
+                data = combi[!is.na(combi$Age),],
+                method = "anova")
+combi$Age[is.na(combi$Age)] <- predict(Agefit, combi[is.na(combi$Age),])
+
+# Embarked has 2 rows that are empty. Set them to S since that's where most boarded
+missing <- which(combi$Embarked == '')
+combi$Embarked[missing] <- 'S'
+combi$Embarked <- factor(combi$Embarked)
+
+# Fare also had 1 NA. Replace it with the median
+missing <- which(is.na(combi$Fare))
+combi$Fare[missing] <- median(combi$Fare, na.rm = TRUE)
+
+# Random Forests are restricted to no more than 32 levels for a factor. Reduce
+# FamilyID levels to get under that threshold by making families of size 3 'Small'
+combi$FamilyID2 <- combi$FamilyID
+combi$FamilyID2 <- as.character(combi$FamilyID2)
+combi$FamilyID2[combi$FamilySize <= 3] <- 'Small'
+combi$FamilyID2 <- factor(combi$FamilyID2)
+
+# Split the train and test data sets back apart, retaining the same factor levels
+train <- combi[1:891,]
+test <- combi[892:1309,]
+
+fit <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + 
+                      Fare + Embarked + Title + FamilySize + FamilyID2,
+                    data = train,
+                    importance = TRUE,
+                    ntree = 2000)
+
+# importance = TRUE means we can see which variables are important
+varImpPlot(fit)
+
+# Adapt the fit to the test data
+Prediction <- predict(fit, test)
 
 submit <- data.frame(PassengerId = test$PassengerId, Survived = Prediction)
-write.csv(submit, file = "submissions/featureengineereddecisiontreemodeltrevor1.csv", row.names = FALSE)
+write.csv(submit, file = "submissions/randomForest.csv", row.names = FALSE)
