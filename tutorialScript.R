@@ -67,12 +67,17 @@ test <- read.csv("data/test.csv")
 fit <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
              data = train,
              method = "class")
+
+# Override the control to get more complex trees - beware overfitting! (this
+# will do worse than just the all ladies survive model if submitted)
+#              control = rpart.control(minsplit = 2, cp = 0))
+
 # Standard rpart commands
 # plot(fit)
 # text(fit)
 
 # Fancy rpart commands (requires rattle and other packages installed above)
-# fancyRpartPlot(fit)
+fancyRpartPlot(fit)
 
 Prediction <- predict(fit, test, type = "class")
 
