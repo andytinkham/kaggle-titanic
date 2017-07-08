@@ -184,17 +184,26 @@ combi$FamilyID2 <- factor(combi$FamilyID2)
 train <- combi[1:891,]
 test <- combi[892:1309,]
 
-fit <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + 
-                      Fare + Embarked + Title + FamilySize + FamilyID2,
-                    data = train,
-                    importance = TRUE,
-                    ntree = 2000)
+# fit <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + 
+#                       Fare + Embarked + Title + FamilySize + FamilyID2,
+#                     data = train,
+#                     importance = TRUE,
+#                     ntree = 2000)
 
 # importance = TRUE means we can see which variables are important
-varImpPlot(fit)
+# varImpPlot(fit)
 
 # Adapt the fit to the test data
-Prediction <- predict(fit, test)
+# Prediction <- predict(fit, test)
+
+# Conditional inference trees are different (need party library above)
+fit <- cforest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + 
+                             Fare + Embarked + Title + FamilySize + FamilyID,
+               data = train,
+               controls = cforest_unbiased(ntree = 2000, mtry = 3))
+
+# Adapt the fit to the data
+Prediction <- predict(fit, test, OOB = TRUE, type = "response")
 
 submit <- data.frame(PassengerId = test$PassengerId, Survived = Prediction)
-write.csv(submit, file = "submissions/randomForest.csv", row.names = FALSE)
+write.csv(submit, file = "submissions/randomForestParty.csv", row.names = FALSE)
