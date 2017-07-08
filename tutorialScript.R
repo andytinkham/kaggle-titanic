@@ -38,5 +38,18 @@ train$Child[train$Age < 18] <- 1
 # aggregate(Survived ~ Child + Sex, data = train, FUN = 
 #   function(x) {sum(x)/length(x)})
 
+# What about fare and ticket class? Maybe they'll show something interesting
+# Group the fares into bins
+train$Fare2 <- '30+'
+train$Fare2[train$Fare < 30 & train$Fare >= 20] <- '20-30'
+train$Fare2[train$Fare < 20 & train$Fare >= 10] <- '10-20'
+train$Fare2[train$Fare < 10] <- "<10"
+
+test$Survived[test$Sex == "female" & test$Pclass == 3 & test$Fare >= 20] <- 0
+
+# Look at proportions by sex, class, and fare grouping
+aggregate(Survived ~ Fare2 + Pclass + Sex, data = train, FUN = 
+            function(x) {sum(x)/length(x)})
+
 submit <- data.frame(PassengerId = test$PassengerId, Survived = test$Survived)
-write.csv(submit, file = "submissions/womenallsurvive.csv", row.names = FALSE)
+write.csv(submit, file = "submissions/womennotexpensive3rdclasssurvive.csv", row.names = FALSE)
