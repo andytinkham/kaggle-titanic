@@ -3,7 +3,16 @@
 
 setwd("~/Rprojects/kaggle-titanic/")
 
+# Packages for better decision tree plots
+# install.packages('rattle')
+# install.packages('rpart.plot')
+# install.packages('RColorBrewer')
+
 library(readr)
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
 
 # Pull in the datasets
 train <- read.csv("data/train.csv")
@@ -52,6 +61,13 @@ train$Fare2[train$Fare < 10] <- "<10"
 # Women in 3rd class with expensive tickets were much less likely to survive.
 # Assume they didn't (Correctness = 0.77990)
 test$Survived[test$Sex == "female" & test$Pclass == 3 & test$Fare >= 20] <- 0
+
+# Too much work to do it all by hand - use decision trees! (rpart library)
+fit <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+             data = train,
+             method = "class")
+plot(fit)
+text(fit)
 
 submit <- data.frame(PassengerId = test$PassengerId, Survived = test$Survived)
 write.csv(submit, file = "submissions/womennotexpensive3rdclasssurvive.csv", row.names = FALSE)
