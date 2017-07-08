@@ -45,11 +45,13 @@ train$Fare2[train$Fare < 30 & train$Fare >= 20] <- '20-30'
 train$Fare2[train$Fare < 20 & train$Fare >= 10] <- '10-20'
 train$Fare2[train$Fare < 10] <- "<10"
 
-test$Survived[test$Sex == "female" & test$Pclass == 3 & test$Fare >= 20] <- 0
-
 # Look at proportions by sex, class, and fare grouping
-aggregate(Survived ~ Fare2 + Pclass + Sex, data = train, FUN = 
-            function(x) {sum(x)/length(x)})
+# aggregate(Survived ~ Fare2 + Pclass + Sex, data = train, FUN = 
+#             function(x) {sum(x)/length(x)})
+
+# Women in 3rd class with expensive tickets were much less likely to survive.
+# Assume they didn't (Correctness = 0.77990)
+test$Survived[test$Sex == "female" & test$Pclass == 3 & test$Fare >= 20] <- 0
 
 submit <- data.frame(PassengerId = test$PassengerId, Survived = test$Survived)
 write.csv(submit, file = "submissions/womennotexpensive3rdclasssurvive.csv", row.names = FALSE)
